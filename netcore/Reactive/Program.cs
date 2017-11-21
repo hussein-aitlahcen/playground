@@ -31,22 +31,25 @@ namespace Reactive
     // Fully immutable
     class A
     {
+        public static A Empty => new A(0, ImmutableList<String>.Empty, String.Empty);
+
         public int Cow { get; }
         public ImmutableList<String> Drake { get; }
         public String Unicorn { get; }
-        public A() : this(0, ImmutableList<String>.Empty, String.Empty) {}
+
         public A(int cow, ImmutableList<String> drake, String unicorn)
         {
             Cow = cow;
             Drake = drake;
             Unicorn = unicorn;
         }
+
         public override String ToString() => $"cow={Cow}, drake={Drake.Count}, unicorn={Unicorn}";
     }
 
     class Program
     {
-        // Imagine a flow comming from different sources an being merged
+        // Imagine a flow comming from different sources and being merged
         static IObservable<Event> EventStream() => new []
         {
             new Event(EventType.Unicorn),
@@ -71,12 +74,13 @@ namespace Reactive
                         }
                     });
 
+        // Immutable, side-effect free code, easysn't it testable ?
         static void Main(string[] args)
         {
             // Given a single object category A and morphisms A -> A, the monoid operation is the composition.
             MorphismStream(EventStream())
                 // We could retrieve the intermediate result by applying a 'Scan' instead of the 'Aggregate'
-                .MonoidalAggregation(new A())
+                .MonoidalAggregation(A.Empty)
                 .Subscribe(a => Console.WriteLine(a));
         }
     }
