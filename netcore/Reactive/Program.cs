@@ -3,16 +3,20 @@ using System.Linq;
 using System.Reactive;
 using System.Reactive.Linq;
 using System.Collections.Immutable;
+using System.Diagnostics.Contracts;
 
 namespace Reactive
 {
     // Syntaxic sugar
+    [Pure]
     static class Extensions
     {
-        public static Func<T, T> Identity<T>() => x => x;
-        public static Func<T, V> Compose<T, U, V>(this Func<U, V> g, Func<T, U> f) => x => g(f(x));
-        public static IObservable<T> MonoidalAggregation<T>(this IObservable<Func<T, T>> morphismStream, T initial) =>
-            morphismStream.Aggregate(Identity<T>(), Compose).Select(f => f(initial));
+        public static Func<T, T> Identity<T>() =>
+            x => x;
+        public static Func<T, V> Compose<T, U, V>(this Func<U, V> g, Func<T, U> f) =>
+            x => g(f(x));
+        public static IObservable<T> MonoidAppend<T>(this IObservable<Func<T, T>> morphismStream, T initial) =>
+            morphismStream.Scan(Identity<T>(), Compose).Select(f => f(initial));
     }
 
     enum EventType
@@ -22,6 +26,7 @@ namespace Reactive
         Unicorn
     }
 
+    [Pure]
     class Event
     {
         public EventType Type { get; }
@@ -29,9 +34,11 @@ namespace Reactive
     }
 
     // Fully immutable
+    [Pure]
     class A
     {
-        public static A Empty => new A(0, ImmutableList<String>.Empty, String.Empty);
+        public static A Empty =>
+            new A(0, ImmutableList<String>.Empty, String.Empty);
 
         public int Cow { get; }
         public ImmutableList<String> Drake { get; }
@@ -44,22 +51,26 @@ namespace Reactive
             Unicorn = unicorn;
         }
 
-        public override String ToString() => $"cow={Cow}, drake={Drake.Count}, unicorn={Unicorn}";
+        public override String ToString() =>
+            $"cow={Cow}, drake={Drake.Count}, unicorn={Unicorn}";
     }
 
     class Program
     {
         // Imagine a flow comming from different sources and being merged
-        static IObservable<Event> EventStream() => new []
-        {
-            new Event(EventType.Unicorn),
-            new Event(EventType.FairyDrake),
-            new Event(EventType.Unicorn),
-            new Event(EventType.HolyCow),
-            new Event(EventType.FairyDrake)
-        }.ToObservable();
+        [Pure]
+        static IObservable<Event> EventStream() =>
+            new []
+            {
+                new Event(EventType.Unicorn),
+                new Event(EventType.FairyDrake),
+                new Event(EventType.Unicorn),
+                new Event(EventType.HolyCow),
+                new Event(EventType.FairyDrake)
+            }.ToObservable();
 
         // Given an event category, map each event to a morphism in our single object category
+        [Pure]
         static IObservable<Func<A, A>> MorphismStream(IObservable<Event> eventStream) =>
             // Pretty sad but the compiler cannot infer high order functions...
             eventStream.Select<Event, Func<A, A>>(ev =>
@@ -74,14 +85,13 @@ namespace Reactive
                         }
                     });
 
+        // Given a single object category A and morphisms A -> A, the monoid operation is the composition.
+        [Pure]
+        static IObservable<A> StateStream() =>
+            MorphismStream(EventStream()).MonoidAppend(A.Empty);
+
         // Immutable, side-effect free code, easysn't it testable ?
-        static void Main(string[] args)
-        {
-            // Given a single object category A and morphisms A -> A, the monoid operation is the composition.
-            MorphismStream(EventStream())
-                // We could retrieve the intermediate result by applying a 'Scan' instead of the 'Aggregate'
-                .MonoidalAggregation(A.Empty)
-                .Subscribe(a => Console.WriteLine(a));
-        }
+        static void Main(string[] args) =>
+            StateStream().Subscribe(a => Console.WriteLine(a));
     }
 }
