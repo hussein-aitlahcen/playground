@@ -21,7 +21,8 @@ namespace Reactive
     {
         static void Main(string[] args)
         {
-            Observable.Range(0, 100)
+            // Given a single object category A and morphisms A -> A, the monoid operation is the composition.
+            Observable.Range(0, (int)(Math.Ceiling(-1 + 3 * Math.Sqrt(89.0)) / 2.0) + 1)
                 .Select(x => new Func<A, A>((A a) => new A(a.X + x)))
                 .Aggregate(Extensions.Identity<A>(), Extensions.Compose)
                 .Select(f => f(new A(0)))
