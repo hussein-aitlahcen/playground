@@ -67,7 +67,7 @@ namespace Reactive
                             case EventType.HolyCow: return a => new A(a.Cow + 1, a.Drake, a.Unicorn);
                             case EventType.FairyDrake: return a => new A(a.Cow, a.Drake.Add("drake"), a.Unicorn);
                             case EventType.Unicorn: return a => new A(a.Cow, a.Drake, a.Unicorn + " UNNNNNNICORN");
-                            default: return a => a; // Identity
+                            default: return Extensions.Identity<A>();
                         }
                     });
 
@@ -75,6 +75,7 @@ namespace Reactive
         {
             // Given a single object category A and morphisms A -> A, the monoid operation is the composition.
             MorphismStream(EventStream())
+                // We could retrieve the intermediate result by applying a 'Scan' instead of the 'Aggregate'
                 .MonoidalAggregation(new A())
                 .Subscribe(a => Console.WriteLine(a));
         }
