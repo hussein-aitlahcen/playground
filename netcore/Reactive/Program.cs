@@ -15,8 +15,8 @@ namespace Reactive
             x => x;
         public static Func<T, V> Compose<T, U, V>(this Func<U, V> g, Func<T, U> f) =>
             x => g(f(x));
-        public static IObservable<T> MonoidAppend<T>(this IObservable<Func<T, T>> morphismStream, T initial) =>
-            morphismStream.Scan(Identity<T>(), Compose).Select(f => f(initial));
+        public static IObservable<Func<T, T>> FullTransformationMonoid<T>(this IObservable<Func<T, T>> morphismStream) =>
+            morphismStream.Scan(Identity<T>(), Compose);
     }
 
     enum EventType
@@ -88,7 +88,7 @@ namespace Reactive
         // Given a single object category A and morphisms A -> A, the monoid operation is the composition.
         [Pure]
         static IObservable<A> StateStream() =>
-            MorphismStream(EventStream()).MonoidAppend(A.Empty);
+            MorphismStream(EventStream()).FullTransformationMonoid().Select(f => f(A.Empty));
 
         // Immutable, side-effect free code, easysn't it testable ?
         static void Main(string[] args) =>
