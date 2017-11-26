@@ -15,8 +15,10 @@ namespace Reactive
             x => x;
         public static Func<T, V> Compose<T, U, V>(this Func<U, V> g, Func<T, U> f) =>
             x => g(f(x));
+        public static Func<U, T, V> Flip<T, U, V>(this Func<T, U, V> f) =>
+            (x, y) => f(y, x);
         public static IObservable<Func<T, T>> FullTransformationMonoid<T>(this IObservable<Func<T, T>> morphismStream) =>
-            morphismStream.Scan(Identity<T>(), Compose);
+            morphismStream.Scan(Identity<T>(), Flip<Func<T, T>, Func<T, T>, Func<T, T>>(Compose));
     }
 
     enum EventType
