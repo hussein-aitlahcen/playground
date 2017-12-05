@@ -1,5 +1,8 @@
+{-# LANGUAGE BangPatterns #-}
+
 module Lib where
 
+import qualified Data.Sequence as SQ
 import Control.Monad
 import Data.List
 import qualified Data.Set as S
@@ -14,22 +17,42 @@ contentOf :: String
           -> IO Input
 contentOf = BS.readFile . ("./files/" ++)
 
+nonEmpty :: [Input] -> [Input]
+nonEmpty = filter (/= BS.empty)
+
+nonEmptyLines :: Input -> [Input]
+nonEmptyLines = nonEmpty . C.lines
+
 day4 :: Level
-day4 content = (part1, part2)
+day4 content = let part1 = validLength id
+                   part2 = validLength $ map BS.sort
+               in
+                 (part1, part2)
   where
-    lines = C.split '\n'
-    nonEmpty = filter (/= BS.empty)
-    validLength f = length . filter (isValid f) . nonEmpty . lines $ content
+    validLength f = length . filter (isValid f) . nonEmptyLines $ content
     isValid projection line = length original == (S.size . uniques) original
       where
         words = C.split ' '
         original = projection . words $ line
         uniques = S.fromList
-    part1 = validLength id
-    part2 = validLength (map BS.sort)
 
 day5 :: Level
-day5 content = (0, 0)
+day5 content = let part1 = run id 0 0 maze
+                   part2 = run  (\x -> if x >= 3 then -1 else 1) 0 0 maze
+               in
+                 (part1, part2)
+  where
+    maze = SQ.fromList . map (readInt . C.unpack) . nonEmptyLines $ content
+    readInt x = read x :: Int
+    run :: (Int -> Int) -> Int -> Int -> SQ.Seq Int -> Int
+    run !f !offset !acc !stack
+      | offset >= (SQ.length stack) || offset < 0 = acc
+      | otherwise = let value = SQ.index stack offset
+                        nextStack = SQ.update offset (value + f value) stack
+                    in
+                      run f (offset + value) (acc + 1) nextStack
+      where
+        sl = SQ.length
 
 days :: [(String, Level)]
 days = [("day4", day4), ("day5", day5)]
