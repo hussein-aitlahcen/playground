@@ -7,6 +7,7 @@ import Control.Applicative
 import Control.Monad
 import Data.Char
 import Data.List
+import qualified Data.Map.Strict as M
 import Data.Attoparsec.ByteString
 import Data.Attoparsec.ByteString.Char8 as AC
 import Data.Attoparsec.Combinator
@@ -64,13 +65,22 @@ day5 content = let part1 = run id 0 0 maze
 day6 :: Level
 day6 content = return (0, 0)
 
-data FlatTree = FlatTree { identifier :: BS.ByteString, weight :: Int, childrends :: [BS.ByteString] } deriving (Show)
+data FlatTree = FlatTree { identifier :: BS.ByteString, weight :: Int, childrens :: [BS.ByteString] } deriving (Show)
+
+instance Eq FlatTree where
+  (==) a b = identifier a == identifier b
 
 -- ssqhzgo (183) -> idwscr, jwmobb
 day7 :: Level
 day7 content = let x = mapM tree . nonEmptyLines $ content
                in case x of
-                    Right trees -> print trees >> return (0, 0)
+                    Right trees -> do
+                      let
+                        identifiers = map identifier trees
+                        stupids = join $ map childrens trees
+                        Just x = find (not . (flip elem) stupids) identifiers
+                      print x
+                      return (0, 0)
                     Left err -> error err
   where
     readIdent = AC.takeWhile1 isLetter
