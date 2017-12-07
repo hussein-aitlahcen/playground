@@ -24,6 +24,7 @@ library
                      , containers >= 0.5
                      , bytestring >= 0.10
                      , vector
+                     , attoparsec >= 0.13
   default-language:    Haskell2010
 
 executable adventofcode-exe
