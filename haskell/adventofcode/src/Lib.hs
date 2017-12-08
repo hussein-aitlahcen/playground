@@ -102,7 +102,7 @@ data Condition = Condition { targetReg :: BS.ByteString, operator :: Operator, c
 data Operator = G | L | GE | LE | E | NE deriving Show
 
 day8 :: Level
-day8 content = return $ interpret 0 0 M.empty ((fromRight [] . mapM readInstruction . nonEmptyLines) content)
+day8 content = return $ interpret 0 0 M.empty ((fromRight [] . mapM (parseOnly readInstruction) . nonEmptyLines) content)
   where
     readValue = signed decimal
     readRegister = AC.takeWhile isLetter
@@ -117,7 +117,7 @@ day8 content = return $ interpret 0 0 M.empty ((fromRight [] . mapM readInstruct
       (">" >> return G) <|>
       ("<" >> return L)
     readCondition = Condition <$> ("if" *> skipSpace *> readRegister) <* skipSpace <*> readOperator <* skipSpace <*> readValue
-    readInstruction = parseOnly $ Instruction <$> readRegister <* skipSpace <*> readMethod <* skipSpace <*> readValue <* skipSpace <*> readCondition
+    readInstruction = Instruction <$> readRegister <* skipSpace <*> readMethod <* skipSpace <*> readValue <* skipSpace <*> readCondition
     interpret !i !m !regs !stack
       | i >= length stack = (maxValue, m)
       | otherwise = let (Instruction ir im imv ic) = stack !! i
