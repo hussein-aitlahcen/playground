@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -123,9 +124,7 @@ day8 content = return $ interpret 0 0 M.empty ((fromRight [] . mapM readInstruct
                         f = case im of
                           Inc -> (+)
                           Dec -> (-)
-                        nextValue x = case x of
-                          Just y -> Just $ f y imv
-                          Nothing -> Just $ f 0 imv
+                        nextValue x = Just $ f (fromMaybe 0 x) imv
                         nextIndex = i + 1
                         nextMax = max m maxValue
                     in
