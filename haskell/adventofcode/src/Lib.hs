@@ -107,15 +107,15 @@ day8 content = return $ interpret 0 0 M.empty ((fromRight [] . mapM (parseOnly r
     readValue = signed decimal
     readRegister = AC.takeWhile isLetter
     readMethod =
-      ("inc" >> return Inc) <|>
-      ("dec" >> return Dec)
+      ("inc" >> pure Inc) <|>
+      ("dec" >> pure Dec)
     readOperator =
-      (">=" >> return GE) <|>
-      ("<=" >> return LE) <|>
-      ("==" >> return E) <|>
-      ("!=" >> return NE) <|>
-      (">" >> return G) <|>
-      ("<" >> return L)
+      (">=" >> pure GE) <|>
+      ("<=" >> pure LE) <|>
+      ("==" >> pure E) <|>
+      ("!=" >> pure NE) <|>
+      (">" >> pure G) <|>
+      ("<" >> pure L)
     readCondition = Condition <$> ("if" *> skipSpace *> readRegister) <* skipSpace <*> readOperator <* skipSpace <*> readValue
     readInstruction = Instruction <$> readRegister <* skipSpace <*> readMethod <* skipSpace <*> readValue <* skipSpace <*> readCondition
     interpret !i !m !regs !stack
