@@ -133,19 +133,20 @@ day8 content = return $ interpret 0 0 M.empty ((fromRight [] . mapM readInstruct
                       else
                         interpret nextIndex nextMax regs stack
       where
-        maximumMaybe xs
-          | null xs   = Nothing
-          | otherwise = Just $ maximum xs
-        maxValue = fromMaybe 0 . maximumMaybe . M.elems $ regs
-        validCondition (Condition reg op checkValue) = case op of
-                                                         G -> rv > checkValue
-                                                         L -> rv < checkValue
-                                                         GE -> rv >= checkValue
-                                                         LE -> rv <= checkValue
-                                                         E -> rv == checkValue
-                                                         NE -> rv /= checkValue
+        maxi xs
+          | null xs   = 0
+          | otherwise = maximum xs
+        maxValue = maxi . M.elems $ regs
+        validCondition (Condition reg op checkValue) = (opf op) rv checkValue
             where
               rv = M.findWithDefault 0 reg regs
+              opf op = case op of
+                G -> (>)
+                L -> (<)
+                GE -> (>=)
+                LE -> (<=)
+                E -> (==)
+                NE -> (/=)
 
 days :: [(String, Level)]
 days = [("day8", day8)]
