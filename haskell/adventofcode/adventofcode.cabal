@@ -20,7 +20,7 @@ description:         Please see the README on Github at <https://github.com/gith
 library
   hs-source-dirs:      src
   exposed-modules:     Lib
-  build-depends:       base >= 4.7 && < 5
+  build-depends:       base >= 4.10
                      , containers >= 0.5
                      , bytestring >= 0.10
                      , vector

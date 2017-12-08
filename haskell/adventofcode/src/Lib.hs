@@ -7,15 +7,16 @@ import Control.Applicative
 import Control.Monad
 import Data.Char
 import Data.List
+import Data.Maybe
+import Data.Either
 import qualified Data.Map.Strict as M
-import Data.Attoparsec.ByteString
 import Data.Attoparsec.ByteString.Char8 as AC
 import Data.Attoparsec.Combinator
 import qualified Data.Sequence as SQ
 import qualified Data.Set as S
 import qualified Data.ByteString.Char8 as C
 import qualified Data.ByteString.Internal as BSI
-import qualified Data.ByteString as BS
+import qualified Data.ByteString.Char8 as BS
 
 type Level = Input -> IO Output
 type Input = BS.ByteString
@@ -85,7 +86,7 @@ day7 content = let x = mapM tree . nonEmptyLines $ content
   where
     readIdent = AC.takeWhile1 isLetter
     readWeight = char '(' *> decimal <* char ')'
-    readChilds = AC.takeWhile (not . isLetter) *> AC.takeWhile isLetter `AC.sepBy` string ", "
+    readChilds = AC.takeWhile (not . isLetter) *> AC.takeWhile isLetter `sepBy` string ", "
     readTree = do
       ident <- readIdent
       char ' '
@@ -94,8 +95,61 @@ day7 content = let x = mapM tree . nonEmptyLines $ content
       return $ FlatTree ident w childs
     tree = parseOnly readTree
 
+data Instruction = Instruction { register :: BS.ByteString, method :: Method, methodValue :: Int, condition :: Condition } deriving Show
+data Method = Inc | Dec deriving (Show)
+data Condition = Condition { targetReg :: BS.ByteString, operator :: Operator, checkValue :: Int } deriving Show
+data Operator = G | L | GE | LE | E | NE deriving Show
+
+day8 :: Level
+day8 content = return $ interpret 0 0 M.empty ((fromRight [] . mapM readInstruction . nonEmptyLines) content)
+  where
+    readValue = signed decimal
+    readRegister = AC.takeWhile isLetter
+    readMethod =
+      ("inc" >> return Inc) <|>
+      ("dec" >> return Dec)
+    readOperator =
+      (">=" >> return GE) <|>
+      ("<=" >> return LE) <|>
+      ("==" >> return E) <|>
+      ("!=" >> return NE) <|>
+      (">" >> return G) <|>
+      ("<" >> return L)
+    readCondition = Condition <$> ("if" *> skipSpace *> readRegister) <* skipSpace <*> readOperator <* skipSpace <*> readValue
+    readInstruction = parseOnly $ Instruction <$> readRegister <* skipSpace <*> readMethod <* skipSpace <*> readValue <* skipSpace <*> readCondition
+    interpret !i !m !regs !stack
+      | i >= length stack = (maxValue, m)
+      | otherwise = let (Instruction ir im imv ic) = stack !! i
+                        f = case im of
+                          Inc -> (+)
+                          Dec -> (-)
+                        nextValue x = case x of
+                          Just y -> Just $ f y imv
+                          Nothing -> Just $ f 0 imv
+                        nextIndex = i + 1
+                        nextMax = max m maxValue
+                    in
+                      if validCondition ic then
+                        interpret nextIndex nextMax (M.alter nextValue ir regs) stack
+                      else
+                        interpret nextIndex nextMax regs stack
+      where
+        maximumMaybe xs
+          | null xs   = Nothing
+          | otherwise = Just $ maximum xs
+        maxValue = fromMaybe 0 . maximumMaybe . M.elems $ regs
+        validCondition (Condition reg op checkValue) = case op of
+                                                         G -> rv > checkValue
+                                                         L -> rv < checkValue
+                                                         GE -> rv >= checkValue
+                                                         LE -> rv <= checkValue
+                                                         E -> rv == checkValue
+                                                         NE -> rv /= checkValue
+            where
+              rv = M.findWithDefault 0 reg regs
+
 days :: [(String, Level)]
-days = [("day7", day7)]
+days = [("day8", day8)]
 
 run :: IO ()
 run = join $ mapM_ putStrLn <$> mapM (\(n, f) -> ((++) (n ++ " -> ") . show <$>) . f =<< contentOf (n ++ ".txt")) days
