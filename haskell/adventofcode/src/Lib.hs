@@ -1,23 +1,23 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE BangPatterns      #-}
+{-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Lib where
 
-import Control.Applicative
-import Control.Monad
-import Data.Char
-import Data.List
-import Data.Maybe
-import Data.Either
-import qualified Data.Map.Strict as M
-import Data.Attoparsec.ByteString.Char8 as AC
-import Data.Attoparsec.Combinator
-import qualified Data.Sequence as SQ
-import qualified Data.Set as S
-import qualified Data.ByteString.Char8 as C
-import qualified Data.ByteString.Internal as BSI
-import qualified Data.ByteString.Char8 as BS
+import           Control.Applicative
+import           Control.Monad
+import           Data.Attoparsec.ByteString.Char8 as AC
+import           Data.Attoparsec.Combinator
+import qualified Data.ByteString.Char8            as C
+import qualified Data.ByteString.Char8            as BS
+import qualified Data.ByteString.Internal         as BSI
+import           Data.Char
+import           Data.Either
+import           Data.List
+import qualified Data.Map.Strict                  as M
+import           Data.Maybe
+import qualified Data.Sequence                    as SQ
+import qualified Data.Set                         as S
 
 type Level = Input -> IO Output
 type Input = BS.ByteString
@@ -141,11 +141,11 @@ day8 content = return $ interpret 0 0 M.empty ((fromRight [] . mapM readInstruct
             where
               rv = M.findWithDefault 0 reg regs
               opf op = case op of
-                G -> (>)
-                L -> (<)
+                G  -> (>)
+                L  -> (<)
                 GE -> (>=)
                 LE -> (<=)
-                E -> (==)
+                E  -> (==)
                 NE -> (/=)
 
 days :: [(String, Level)]
