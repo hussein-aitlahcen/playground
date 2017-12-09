@@ -18,6 +18,7 @@ import qualified Data.Map.Strict                  as M
 import           Data.Maybe
 import qualified Data.Sequence                    as SQ
 import qualified Data.Set                         as S
+import           Data.Word
 
 type Level = Input -> IO Output
 type Input = BS.ByteString
@@ -148,8 +149,36 @@ day8 content = return $ interpret 0 0 M.empty ((fromRight [] . mapM (parseOnly r
                 E  -> (==)
                 NE -> (/=)
 
+data Block = Block { score :: Int, garbage :: Int }
+
+day9 :: Level
+day9 content = let block = fromRight (Block (-1) 0) run
+               in
+                 return (score block, garbage block)
+  where
+
+    readBlock !block@(Block !sc !cs) =
+      ("{" >> continueWith combineBlocks (readBlock innerBlock)) <|>
+      ("<" >> continueWith combineGarbage (readGarbage block)) <|>
+      ("}" >> pure block) <|>
+      (AC.anyChar >> readBlock block)
+      where
+        innerBlock = Block (sc + 1) cs
+        combineBlocks (Block a b) (Block a' b') = Block (a + a') (b + b')
+        combineGarbage (Block a b) (Block a' b') = Block a' (b + b')
+        continueWith f p = f <$> p <*> readBlock block
+
+    readGarbage !block@(Block !sc !cs) =
+      ("!" >> AC.anyChar *> readGarbage block) <|>
+      (">" >> pure block) <|>
+      (AC.anyChar >> readGarbage nextBlock)
+      where
+        nextBlock = Block sc (cs + 1)
+
+    run = parseOnly (readBlock (Block 1 0)) $ content
+
 days :: [(String, Level)]
-days = [("day8", day8)]
+days = [("day8", day8), ("day9", day9)]
 
 run :: IO ()
 run = join $ mapM_ putStrLn <$> mapM (\(n, f) -> ((++) (n ++ " -> ") . show <$>) . f =<< contentOf (n ++ ".txt")) days
