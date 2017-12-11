@@ -165,18 +165,33 @@ day9 content = let block = fromRight (Block (-1) 0) run
         combineBlocks (Block a b) (Block a' b') = Block (a + a') (b + b')
         combineGarbage (Block a b) (Block a' b') = Block a' (b + b')
         continueWith f p = f <$> p <*> readBlock block
-
     readGarbage !block@(Block !sc !cs) =
       ("!" >> AC.anyChar *> readGarbage block) <|>
       (">" >> pure block) <|>
       (AC.anyChar >> readGarbage nextBlock)
       where
         nextBlock = Block sc (cs + 1)
-
     run = parseOnly (readBlock (Block 1 0)) $ content
 
+day10 :: Level
+day10 content = let lengths = map (\x -> read (BS.unpack x) :: Int) . BS.split ',' $ content
+                    (_, _, finalBuffer) = foldl' run (0, 0, [0..255]) lengths
+                    part1 = foldl' (*) 1 . L.take 2 $ finalBuffer
+                in
+                  print finalBuffer >> return (part1, 0)
+  where
+     run (position, skip, buffer) reverseLength  = ((position + reverseLength + skip) `mod` bufferLength, skip + 1, nextBuffer)
+       where
+         bufferLength = length buffer
+         (rightPart, leftPart) = splitAt position . cycle $ buffer
+         (target, rest) = splitAt reverseLength leftPart
+         reconstructed = rightPart ++ (reverse target) ++ rest
+         nextCycleIndex = if position + reverseLength > bufferLength then (position + reverseLength) `mod` bufferLength else 0
+         shift = L.take nextCycleIndex . drop bufferLength $ reconstructed
+         nextBuffer = L.take bufferLength (shift ++ drop nextCycleIndex reconstructed ++ reconstructed)
+
 days :: [(String, Level)]
-days = [("day8", day8), ("day9", day9)]
+days = [("day8", day8), ("day9", day9), ("day10", day10)]
 
 run :: IO ()
 run = join $ mapM_ putStrLn <$> mapM (\(n, f) -> ((++) (n ++ " -> ") . show <$>) . f =<< contentOf (n ++ ".txt")) days
