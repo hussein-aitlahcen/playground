@@ -21,7 +21,7 @@ import           Data.Word
 
 type Level = Input -> IO Output
 type Input = BS.ByteString
-type Output = (Int, Int)
+type Output = BS.ByteString
 
 contentOf :: String
           -> IO Input
@@ -33,11 +33,13 @@ nonEmpty = filter (/= BS.empty)
 nonEmptyLines :: Input -> [Input]
 nonEmptyLines = nonEmpty . BS.lines
 
+showParts a b = BS.pack ("a=" ++ show a ++ ", b=" ++ show b)
+
 day4 :: Level
 day4 content = let part1 = validLength id
                    part2 = validLength $ map BS.sort
                in
-                 return (part1, part2)
+                 return $ showParts part1 part2
   where
     validLength f = length . filter (isValid f) . nonEmptyLines $ content
     isValid projection line = length original == (S.size . uniques) original
@@ -50,7 +52,7 @@ day5 :: Level
 day5 content = let part1 = run id 0 0 maze
                    part2 = run  (\x -> if x >= 3 then -1 else 1) 0 0 maze
                in
-                 return (part1, part2)
+                 return $ showParts part1 part2
   where
     maze = SQ.fromList . map (readInt . BS.unpack) . nonEmptyLines $ content
     readInt x = read x :: Int
@@ -65,14 +67,13 @@ day5 content = let part1 = run id 0 0 maze
         sl = SQ.length
 
 day6 :: Level
-day6 content = return (0, 0)
+day6 content = return ""
 
 data FlatTree = FlatTree { identifier :: BS.ByteString, weight :: Int, childrens :: [BS.ByteString] } deriving (Show)
 
 instance Eq FlatTree where
   (==) a b = identifier a == identifier b
 
--- ssqhzgo (183) -> idwscr, jwmobb
 day7 :: Level
 day7 content = let x = mapM tree . nonEmptyLines $ content
                in case x of
@@ -81,8 +82,7 @@ day7 content = let x = mapM tree . nonEmptyLines $ content
                         identifiers = map identifier trees
                         stupids = join $ map childrens trees
                         Just x = find (not . (flip elem) stupids) identifiers
-                      print x
-                      return (0, 0)
+                      return $ showParts 0 0
                     Left err -> error err
   where
     readIdent = AC.takeWhile1 isLetter
@@ -102,7 +102,9 @@ data Condition = Condition { targetReg :: BS.ByteString, operator :: Operator, c
 data Operator = G | L | GE | LE | E | NE deriving Show
 
 day8 :: Level
-day8 content = return $ interpret 0 0 M.empty ((fromRight [] . mapM (parseOnly readInstruction) . nonEmptyLines) content)
+day8 content = let (a, b) = interpret 0 0 M.empty ((fromRight [] . mapM (parseOnly readInstruction) . nonEmptyLines) content)
+               in
+                 return $ showParts a b
   where
     readValue = signed decimal
     readRegister = AC.takeWhile isLetter
@@ -153,7 +155,7 @@ data Block = Block { score :: Int, garbage :: Int }
 day9 :: Level
 day9 content = let block = fromRight (Block (-1) 0) run
                in
-                 return (score block, garbage block)
+                 return $ showParts (score block) (garbage block)
   where
     readBlock !block@(Block !sc !cs) =
       ("{" >> continueWith combineBlocks (readBlock innerBlock)) <|>
@@ -178,7 +180,7 @@ day10 content = let lengths = map (\x -> read (BS.unpack x) :: Int) . BS.split '
                     (_, _, finalBuffer) = foldl' run (0, 0, [0..255]) lengths
                     part1 = foldl' (*) 1 . L.take 2 $ finalBuffer
                 in
-                  return (part1, 0)
+                  return $ showParts part1 0
   where
      run (position, skip, buffer) reverseLength  = ((position + reverseLength + skip) `mod` bufferLength, skip + 1, nextBuffer)
        where
@@ -195,7 +197,7 @@ day11 content = let directions = join . map (filter (/= BS.empty) . BS.split ','
                     (x, y, z, m) = foldl' run (0, 0, 0, 0) directions
                     distance = dist [x, y, z]
                 in
-                  print (show distance ++ " " ++ show m) >> return (x, y)
+                  return $ showParts distance m
   where
     dist = (/ 2) . fromIntegral . sum . map abs
     run (x, y, z, m) d = (x', y', z', m')
