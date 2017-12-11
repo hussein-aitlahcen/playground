@@ -8,12 +8,11 @@ import           Control.Applicative
 import           Control.Monad
 import           Data.Attoparsec.ByteString.Char8 as AC
 import           Data.Attoparsec.Combinator
-import qualified Data.ByteString.Char8            as C
 import qualified Data.ByteString.Char8            as BS
 import qualified Data.ByteString.Internal         as BSI
 import           Data.Char
 import           Data.Either
-import           Data.List
+import           Data.List                        as L
 import qualified Data.Map.Strict                  as M
 import           Data.Maybe
 import qualified Data.Sequence                    as SQ
