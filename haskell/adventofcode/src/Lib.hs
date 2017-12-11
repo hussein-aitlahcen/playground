@@ -31,7 +31,7 @@ nonEmpty :: [Input] -> [Input]
 nonEmpty = filter (/= BS.empty)
 
 nonEmptyLines :: Input -> [Input]
-nonEmptyLines = nonEmpty . C.lines
+nonEmptyLines = nonEmpty . BS.lines
 
 day4 :: Level
 day4 content = let part1 = validLength id
@@ -42,7 +42,7 @@ day4 content = let part1 = validLength id
     validLength f = length . filter (isValid f) . nonEmptyLines $ content
     isValid projection line = length original == (S.size . uniques) original
       where
-        words = C.split ' '
+        words = BS.split ' '
         original = projection . words $ line
         uniques = S.fromList
 
@@ -52,7 +52,7 @@ day5 content = let part1 = run id 0 0 maze
                in
                  return (part1, part2)
   where
-    maze = SQ.fromList . map (readInt . C.unpack) . nonEmptyLines $ content
+    maze = SQ.fromList . map (readInt . BS.unpack) . nonEmptyLines $ content
     readInt x = read x :: Int
     run :: (Int -> Int) -> Int -> Int -> SQ.Seq Int -> Int
     run !f !offset !acc !stack
@@ -155,7 +155,6 @@ day9 content = let block = fromRight (Block (-1) 0) run
                in
                  return (score block, garbage block)
   where
-
     readBlock !block@(Block !sc !cs) =
       ("{" >> continueWith combineBlocks (readBlock innerBlock)) <|>
       ("<" >> continueWith combineGarbage (readGarbage block)) <|>
