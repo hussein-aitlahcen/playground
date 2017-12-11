@@ -178,7 +178,7 @@ day10 content = let lengths = map (\x -> read (BS.unpack x) :: Int) . BS.split '
                     (_, _, finalBuffer) = foldl' run (0, 0, [0..255]) lengths
                     part1 = foldl' (*) 1 . L.take 2 $ finalBuffer
                 in
-                  print finalBuffer >> return (part1, 0)
+                  return (part1, 0)
   where
      run (position, skip, buffer) reverseLength  = ((position + reverseLength + skip) `mod` bufferLength, skip + 1, nextBuffer)
        where
@@ -190,8 +190,27 @@ day10 content = let lengths = map (\x -> read (BS.unpack x) :: Int) . BS.split '
          shift = L.take nextCycleIndex . drop bufferLength $ reconstructed
          nextBuffer = L.take bufferLength (shift ++ drop nextCycleIndex reconstructed ++ reconstructed)
 
+day11 :: Level
+day11 content = let directions = join . map (filter (/= BS.empty) . BS.split ',') $ nonEmptyLines content
+                    (x, y, z, m) = foldl' run (0, 0, 0, 0) directions
+                    distance = dist [x, y, z]
+                in
+                  print (show distance ++ " " ++ show m) >> return (x, y)
+  where
+    dist = (/ 2) . fromIntegral . sum . map abs
+    run (x, y, z, m) d = (x', y', z', m')
+      where
+        (x', y', z') = case d of
+                         "n"  -> (x, y + 1, z - 1)
+                         "ne" ->  (x + 1, y, z - 1)
+                         "nw" ->  (x - 1, y + 1, z)
+                         "s"  -> (x, y - 1, z + 1)
+                         "sw" ->  (x - 1, y, z + 1)
+                         "se" ->  (x + 1, y - 1, z)
+        m' = max m (dist [x', y', z'])
+
 days :: [(String, Level)]
-days = [("day8", day8), ("day9", day9), ("day10", day10)]
+days = [("day8", day8), ("day9", day9), ("day10", day10), ("day11", day11)]
 
 run :: IO ()
 run = join $ mapM_ putStrLn <$> mapM (\(n, f) -> ((++) (n ++ " -> ") . show <$>) . f =<< contentOf (n ++ ".txt")) days
