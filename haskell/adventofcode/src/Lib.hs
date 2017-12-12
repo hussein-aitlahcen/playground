@@ -227,7 +227,7 @@ day12 content = let a = S.size . connections S.empty $ 0
     connections !visited x = let childs = S.fromList . fromMaybe [] $ M.lookup x dict
                                  visited' = S.insert x . S.union childs $ visited
                              in
-                              S.foldl' S.union (S.singleton x) $ S.map (connections visited') . S.filter (flip S.notMember visited) $ childs
+                              S.foldl' S.union (S.singleton x) . S.map (connections visited') . S.filter (flip S.notMember visited) $ childs
 
 day13 :: Level
 day13 content = return ""
