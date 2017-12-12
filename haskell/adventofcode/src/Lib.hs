@@ -6,6 +6,7 @@ module Lib where
 
 import           Control.Applicative
 import           Control.Monad
+import           Control.Monad.IO.Class
 import           Data.Attoparsec.ByteString.Char8 as AC
 import           Data.Attoparsec.Combinator
 import qualified Data.ByteString.Char8            as BS
@@ -27,19 +28,23 @@ contentOf :: String
           -> IO Input
 contentOf = BS.readFile . ("./files/" ++)
 
+readInt :: String -> Int
+readInt = read
+
 nonEmpty :: [Input] -> [Input]
 nonEmpty = filter (/= BS.empty)
 
 nonEmptyLines :: Input -> [Input]
 nonEmptyLines = nonEmpty . BS.lines
 
-showParts a b = BS.pack ("a=" ++ show a ++ ", b=" ++ show b)
+showParts :: (Show a, Show b) => a -> b -> IO BS.ByteString
+showParts a b = return $ BS.pack ("a=" ++ show a ++ ", b=" ++ show b)
 
 day4 :: Level
 day4 content = let part1 = validLength id
                    part2 = validLength $ map BS.sort
                in
-                 return $ showParts part1 part2
+                 showParts part1 part2
   where
     validLength f = length . filter (isValid f) . nonEmptyLines $ content
     isValid projection line = length original == (S.size . uniques) original
@@ -52,7 +57,7 @@ day5 :: Level
 day5 content = let part1 = run id 0 0 maze
                    part2 = run  (\x -> if x >= 3 then -1 else 1) 0 0 maze
                in
-                 return $ showParts part1 part2
+                 showParts part1 part2
   where
     maze = SQ.fromList . map (readInt . BS.unpack) . nonEmptyLines $ content
     readInt x = read x :: Int
@@ -82,7 +87,7 @@ day7 content = let x = mapM tree . nonEmptyLines $ content
                         identifiers = map identifier trees
                         stupids = join $ map childrens trees
                         Just x = find (not . (flip elem) stupids) identifiers
-                      return $ showParts 0 0
+                      showParts 0 0
                     Left err -> error err
   where
     readIdent = AC.takeWhile1 isLetter
@@ -104,7 +109,7 @@ data Operator = G | L | GE | LE | E | NE deriving Show
 day8 :: Level
 day8 content = let (a, b) = interpret 0 0 M.empty ((fromRight [] . mapM (parseOnly readInstruction) . nonEmptyLines) content)
                in
-                 return $ showParts a b
+                 showParts a b
   where
     readValue = signed decimal
     readRegister = AC.takeWhile isLetter
@@ -155,7 +160,7 @@ data Block = Block { score :: Int, garbage :: Int }
 day9 :: Level
 day9 content = let block = fromRight (Block (-1) 0) run
                in
-                 return $ showParts (score block) (garbage block)
+                 showParts (score block) (garbage block)
   where
     readBlock !block@(Block !sc !cs) =
       ("{" >> continueWith combineBlocks (readBlock innerBlock)) <|>
@@ -176,11 +181,11 @@ day9 content = let block = fromRight (Block (-1) 0) run
     run = parseOnly (readBlock (Block 1 0)) $ content
 
 day10 :: Level
-day10 content = let lengths = map (\x -> read (BS.unpack x) :: Int) . BS.split ',' $ content
+day10 content = let lengths = map (readInt . BS.unpack) . BS.split ',' $ content
                     (_, _, finalBuffer) = foldl' run (0, 0, [0..255]) lengths
-                    part1 = foldl' (*) 1 . L.take 2 $ finalBuffer
+                    part1 = product . L.take 2 $ finalBuffer
                 in
-                  return $ showParts part1 0
+                  showParts part1 0
   where
      run (position, skip, buffer) reverseLength  = ((position + reverseLength + skip) `mod` bufferLength, skip + 1, nextBuffer)
        where
@@ -193,11 +198,11 @@ day10 content = let lengths = map (\x -> read (BS.unpack x) :: Int) . BS.split '
          nextBuffer = L.take bufferLength (shift ++ drop nextCycleIndex reconstructed ++ reconstructed)
 
 day11 :: Level
-day11 content = let directions = join . map (filter (/= BS.empty) . BS.split ',') $ nonEmptyLines content
+day11 content = let directions = join . map (nonEmpty . BS.split ',') $ nonEmptyLines content
                     (x, y, z, m) = foldl' run (0, 0, 0, 0) directions
                     distance = dist [x, y, z]
                 in
-                  return $ showParts distance m
+                  showParts distance m
   where
     dist = (/ 2) . fromIntegral . sum . map abs
     run (x, y, z, m) d = (x', y', z', m')
@@ -211,8 +216,30 @@ day11 content = let directions = join . map (filter (/= BS.empty) . BS.split ','
                          "se" ->  (x + 1, y - 1, z)
         m' = max m (dist [x', y', z'])
 
+day12 :: Level
+day12 content = let a = S.size . connections S.empty $ 0
+                    b = S.size . S.fromList . map (connections S.empty) . M.keys $ dict
+                in
+                  showParts a b
+  where
+    connection = (,) <$> (decimal <* " <-> ") <*> decimal `sepBy` ", "
+    dict = M.fromList . fromRight [] . mapM (parseOnly connection) . nonEmptyLines $ content
+    connections !visited x = let childs = S.fromList . fromMaybe [] $ M.lookup x dict
+                                 visited' = S.insert x . S.union childs $ visited
+                             in
+                              S.foldl' S.union (S.singleton x) $ S.map (connections visited') . S.filter (flip S.notMember visited) $ childs
+
+day13 :: Level
+day13 content = return ""
+
+day14 :: Level
+day14 content = return ""
+
+day15 :: Level
+day15 content = return ""
+
 days :: [(String, Level)]
-days = [("day8", day8), ("day9", day9), ("day10", day10), ("day11", day11)]
+days = [("day8", day8), ("day9", day9), ("day10", day10), ("day11", day11), ("day12", day12)]
 
 run :: IO ()
-run = join $ mapM_ putStrLn <$> mapM (\(n, f) -> ((++) (n ++ " -> ") . show <$>) . f =<< contentOf (n ++ ".txt")) days
+run = join $ mapM_ putStrLn <$> mapM (\(n, f) -> ((++) (n ++ " -> ") . BS.unpack <$>) . f =<< contentOf (n ++ ".txt")) days
