@@ -1,4 +1,4 @@
--- Lib.hs --- 
+-- Lib.hs ---
 
 -- Copyright (C) 2017 Hussein Ait-Lahcen
 
@@ -39,6 +39,7 @@ import           Data.Maybe
 import qualified Data.Sequence                    as SQ
 import qualified Data.Set                         as S
 import           Data.Word
+import           Test.Hspec
 
 type Level = Input -> IO Output
 type Input = BS.ByteString
@@ -250,7 +251,20 @@ day12 content = let a = S.size . connections S.empty $ 0
                               S.foldl' S.union (S.singleton x) . S.map (connections visited') . S.filter (flip S.notMember visited) $ childs
 
 day13 :: Level
-day13 content = return ""
+day13 content = let delayedSeverity delay = map (severity delay) $ layers
+                    a = sum . map snd $ delayedSeverity 0
+                    reduce = foldl' (\(ba, va) (bb, vb) -> (ba || bb, va + vb)) (False, 0)
+                    b = map ((,) <$> reduce . delayedSeverity <*> id) [0..]
+                in
+                  showParts a (L.take 1 . filter  (not . fst . fst) $ b)
+  where
+    layer = (,) <$> (decimal <* ": ") <*> decimal
+    layers = fromRight [] . mapM (parseOnly layer) . nonEmptyLines $ content
+    severity t (d, r) = (caught, if caught then d * r else 0)
+      where
+        round = 2 * r - 2
+        time = t + d
+        caught = time `mod` round == 0
 
 day14 :: Level
 day14 content = return ""
@@ -259,7 +273,7 @@ day15 :: Level
 day15 content = return ""
 
 days :: [(String, Level)]
-days = [("day8", day8), ("day9", day9), ("day10", day10), ("day11", day11), ("day12", day12)]
+days = [("day8", day8), ("day9", day9), ("day10", day10), ("day11", day11), ("day12", day12), ("day13", day13)]
 
 run :: IO ()
 run = join $ mapM_ putStrLn <$> mapM (\(n, f) -> ((++) (n ++ " -> ") . BS.unpack <$>) . f =<< contentOf (n ++ ".txt")) days
