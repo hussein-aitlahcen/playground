@@ -208,7 +208,7 @@ day10 content = let lengths = map (readInt . BS.unpack) . BS.split ',' $ content
                 in
                   showParts part1 0
   where
-     run (position, skip, buffer) reverseLength  = ((position + reverseLength + skip) `mod` bufferLength, skip + 1, nextBuffer)
+     run (position, skip, buffer) reverseLength   = ((position + reverseLength + skip) `mod` bufferLength, skip + 1, nextBuffer)
        where
          bufferLength = length buffer
          (rightPart, leftPart) = splitAt position . cycle $ buffer
@@ -267,13 +267,43 @@ day13 content = let delayedSeverity delay = map (severity delay) $ layers
         caught = time `mod` round == 0
 
 day14 :: Level
-day14 content = return ""
+day14 content = return . BS.pack . show $ rows
+  where
+    rows = map ((++) (BS.unpack content ++ "-") . show) [0..127]
 
 day15 :: Level
-day15 content = return ""
+day15 content = return "Not yet hehe !!"
+
+
+data Dance = Spin Int | Exchange Int Int | Partner Char Char deriving Show
+
+day16 :: Level
+day16 content = showParts (foldl' disco ['a'..'p'] $ dances . BS.split ',' $ content) 0
+  where
+    dances = fromRight [] . mapM (parseOnly dance)
+    dance =
+      ("s" >> Spin <$> decimal) <|>
+      ("x" >> Exchange <$> (decimal <* AC.anyChar) <*> decimal) <|>
+      ("p" >> Partner <$> (AC.anyChar <* AC.anyChar) <*> AC.anyChar)
+    disco !game !(Spin nb) = (snd chunks) ++ (fst chunks)
+      where
+        gameLength = length game
+        chunks = splitAt (gameLength - nb) game
+    disco !game !(Exchange i j) = swapElts i j game
+      where
+        swapElts i j ls = [get k x | (k, x) <- zip [0..length ls - 1] ls]
+          where
+            get k x | k == i = ls !! j
+                    | k == j = ls !! i
+                    | otherwise = x
+    disco !game !(Partner a b) = disco game (Exchange i j)
+      where
+        i = indexOf a
+        j = indexOf b
+        indexOf = fromMaybe (-1) . (flip elemIndex $ game)
 
 days :: [(String, Level)]
-days = [("day8", day8), ("day9", day9), ("day10", day10), ("day11", day11), ("day12", day12), ("day13", day13)]
+days = [("day16", day16)]
 
 run :: IO ()
 run = join $ mapM_ putStrLn <$> mapM (\(n, f) -> ((++) (n ++ " -> ") . BS.unpack <$>) . f =<< contentOf (n ++ ".txt")) days
