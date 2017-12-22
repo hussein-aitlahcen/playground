@@ -26,7 +26,11 @@ type Velocity = (Float, Float)
 data Entity = Origin { id :: Int, children :: [Entity] }
             | WithPosition { position :: Position , origin :: Entity }
             | WithRotation { angle :: Int, origin :: Entity }
+
+            -- Recursive induction are not yet implemented in Haskell, we can't constraint origin to be of type WithPosition.
+            -- But this will be implemented in next version of GHC :D.
             | WithVelocity { velocity :: Velocity, origin :: Entity }
+            -- Same as above, origin should be of type WithVelocity
             | WithFriction { friction :: Friction, origin :: Entity }
             deriving Show
 
