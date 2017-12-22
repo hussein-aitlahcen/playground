@@ -25,6 +25,8 @@ module Lib where
 import           Control.Applicative
 import           Control.Arrow
 import           Control.Category
+import           Data.Char
+import           Data.List
 import           Prelude             hiding (id, (.))
 
 newtype Pipe a b = Pipe { runF :: (a -> b) }
@@ -42,5 +44,20 @@ f, h :: Pipe Int Int
 f = arr $ (* 3) . (+ 1)
 h = f &&& f >>> (arr . uncurry) (+)
 
+
+upperCase :: Pipe String String
+upperCase = arr (map toUpper)
+
+httpFormat :: [(String, String)]
+           -> [Pipe (String, String) (String, String)]
+           -> [(String, String)]
+httpFormat elements transformations = map (runF transMonoid) elements
+  where
+    transMonoid = foldl' (>>>) id transformations
+
 entry :: IO ()
-entry = print $ runF h 1
+entry = print $ httpFormat elements transformations
+  where
+    elements = [("User-Agent", "Mozilla")]
+    -- Note that this should be the same as [upperCase *** upperCase]
+    transformations = [upperCase *** id, id *** upperCase]
