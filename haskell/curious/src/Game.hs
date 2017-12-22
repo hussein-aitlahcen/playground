@@ -19,29 +19,33 @@
 
 module Game where
 
+type Friction = Float
 type Position = (Float, Float)
 type Velocity = (Float, Float)
 
 data Entity = Origin { id :: Int, children :: [Entity] }
             | WithPosition { position :: Position , origin :: Entity }
             | WithRotation { angle :: Int, origin :: Entity }
-
-            -- Recursive induction are not yet implemented in Haskell, we can't constraint origin to be of type WithPosition
-            -- But this will be implemented in next version of GHC :D.
             | WithVelocity { velocity :: Velocity, origin :: Entity }
+            | WithFriction { friction :: Friction, origin :: Entity }
             deriving Show
 
 update :: Float -> Entity -> Entity
 update dt (Origin i c) = Origin i (map (update dt) c)
 update dt (WithPosition p o) = WithPosition p (update dt o)
 update dt (WithRotation a o) = WithRotation a (update dt o)
+update dt (WithFriction f (WithVelocity (vx, vy) o)) = WithFriction f (update dt (WithVelocity (vx', vy') o))
+  where
+    r = 1 - f
+    vx' = vx * r
+    vy' = vy * r
 update dt (WithVelocity (vx, vy) (WithPosition (x, y) o)) = WithVelocity (vx, vy) (update dt (WithPosition (x', y') o))
   where
     x' = x + vx * dt
     y' = y + vy * dt
 
 ship  :: Entity
-ship  = WithVelocity (5, 5) $ WithPosition (0, 0) $ WithRotation 0 $ Origin 0 []
+ship  = WithFriction 0.05 $ WithVelocity (5, 5) $ WithPosition (0, 0) $ WithRotation 0 $ Origin 0 []
 
 play :: IO ()
 play = print $ update 1 ship
