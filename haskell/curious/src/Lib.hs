@@ -17,47 +17,24 @@
 -- You should have received a copy of the GNU General Public License
 -- along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-
-{-# LANGUAGE Arrows #-}
-
 module Lib where
 
-import           Control.Applicative
-import           Control.Arrow
-import           Control.Category
+import           Data.Bifunctor
 import           Data.Char
 import           Data.List
-import           Prelude             hiding (id, (.))
 
-newtype Pipe a b = Pipe { runF :: (a -> b) }
-
-instance Arrow Pipe where
-  arr f = Pipe f
-  first (Pipe f) = Pipe (f *** id)
-  second (Pipe f) = Pipe (id *** f)
-
-instance Category Pipe where
-  (Pipe g) . (Pipe f) = Pipe (g . f)
-  id = arr id
-
-f, h :: Pipe Int Int
-f = arr $ (* 3) . (+ 1)
-h = f &&& f >>> (arr . uncurry) (+)
-
-
-upperCase :: Pipe String String
-upperCase = arr (map toUpper)
+upperCase :: String -> String
+upperCase = map toUpper
 
 httpFormat :: [(String, String)]
-           -> [Pipe (String, String) (String, String)]
+           -> [(String, String) -> (String, String)]
            -> [(String, String)]
-httpFormat elements transformations = map (runF transMonoid) elements
+httpFormat elements transformations = map transMonoid elements
   where
-    transMonoid = foldl' (>>>) id transformations
+    transMonoid = foldl' (.) id transformations
 
 entry :: IO ()
 entry = print $ httpFormat elements transformations
   where
     elements = [("User-Agent", "Mozilla")]
-    -- Note that this should be the same as [upperCase *** upperCase]
-    transformations = [upperCase *** id, id *** upperCase]
+    transformations = [bimap upperCase id, bimap id upperCase]

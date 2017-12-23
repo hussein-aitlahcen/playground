@@ -18,31 +18,20 @@
 -- along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-import           Control.Applicative
-import           Control.Arrow
-import           Control.Category
+import           Data.Bifunctor
 import           Lib
-import           Prelude             hiding (id, (.))
 import           Test.Hspec
 import           Test.QuickCheck
 
 main :: IO ()
 main = hspec $ do
-  describe "function f" $ do
-    it "add one and double the value" $ do
-      runF f 0 `shouldBe` 3
-
-  describe "function h" $ do
-    it "double the computation of f" $ do
-      runF h 0 `shouldBe` 6
-
   describe "formating http headers" $ do
     it "should be associative in its transformation composition (i.e. full transformation monoid)" $ do
       let
         headers = [("User-Agent", "Mozilla"),
                    ("Dumb", "Unicorn")]
-        transformations = [(arr $ const "blind") *** id,
-                           id *** (arr $ const "ignorant")]
+        transformations = [bimap (const "blind") id,
+                           bimap id (const "ignorant")]
         expected = [("blind", "ignorant"),
                   ("blind", "ignorant")]
       httpFormat headers transformations `shouldBe` expected
