@@ -1,7 +1,3 @@
-{-# LANGUAGE ExistentialQuantification #-}
-{-# LANGUAGE TypeInType #-}
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE GADTs #-}
 -- Game.hs ---
 
 -- Copyright (C) 2017 Hussein Ait-Lahcen
@@ -20,6 +16,8 @@
 
 -- You should have received a copy of the GNU General Public License
 -- along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+{-# LANGUAGE ExistentialQuantification #-}
 
 module Game where
 
@@ -56,7 +54,7 @@ instance Updatable GameObject where
   update dt (GameObject o) = GameObject $ update dt o
 
 instance Updatable Origin where
-  update dt (Origin i p c) = (Origin i p (map (update dt) c))
+  update dt (Origin i p c) = Origin i p (map (update dt) c)
 
 instance Updatable WithFriction where
   update dt (WithFriction r o) = WithFriction r (update dt . friction r $ o)
@@ -77,14 +75,14 @@ instance Show GameObject where
   show (GameObject o) = show o
 
 data GameObject = forall a. (Show a, Updatable a) => GameObject a
-data Origin = forall a. (Show a, Updatable a) => Origin { id :: Id, position :: Position, childen :: [a] }
+data Origin = Origin { id :: Id, position :: Position, childen :: [GameObject] }
 data WithVelocity = forall a. (Show a, Updatable a, Accelerable a) => WithVelocity Velocity a
 data WithFriction = forall a. (Show a, Updatable a, Frictionable a) => WithFriction Friction a
 
-ship = WithFriction 0.05 $ WithVelocity (5, 5) $ Origin 0 (0, 0) ([a, b])
+ship = WithFriction 0.05 $ WithVelocity (5, 5) $ Origin 0 (0, 0) [a, b]
   where
-    a = GameObject $ WithVelocity (10, 10) $ Origin 0 (0, 0) ([] :: [Origin])
-    b = GameObject $ Origin 0 (0, 0) ([] :: [Origin])
+    a = GameObject $ WithVelocity (10, 10) $ Origin 0 (0, 0) []
+    b = GameObject $ Origin 0 (0, 0) []
 
 play :: IO ()
 play = print $ update 1 ship
