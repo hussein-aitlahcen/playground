@@ -37,7 +37,7 @@ worldPicture :: World -> Picture
 worldPicture w = color white . (uncurry translate . view (player . position)) w $ thickCircle 10 20
 
 worldTransform :: Event -> World -> World
-worldTransform (EventKey (SpecialKey sk) ks _ _) w@(World _ p@(Player _ (vx, vy)))
+worldTransform (EventKey (SpecialKey sk) ks _ _) w
   | sk == KeyLeft && ks == Down = vel _1 (-1)
   | sk == KeyLeft && ks == Up = vel _1 0
   | sk == KeyRight && ks == Down = vel _1 1
