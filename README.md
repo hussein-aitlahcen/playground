@@ -8,4 +8,5 @@ Getting fun with various stuffs (see below).
 
 ## Haskell
 
+- Simple game with Gloss & Lenses
 - Advent Of Code 2017
