@@ -19,43 +19,46 @@
 
 module Game where
 
+import           Common
+import           Control.Lens
+import           Control.Lens.Operators
 import           Graphics.Gloss.Data.Color
 import           Graphics.Gloss.Data.Picture
 import           Graphics.Gloss.Data.Vector
 import           Graphics.Gloss.Interface.Pure.Game
+import           Object
 
-type Velocity = Vector
-type Position = Point
+window = InWindow "Game" (600, 600) (600, 100)
 
-(|+|) :: Point -> Point -> Point
-(|+|) (ax, ay) (bx, by) = (ax + bx, ay + by)
+initialPlayer = Player (0, 0) (0, 0)
+initialWorld = World 0 initialPlayer
 
-data Player = Player { position :: Position, velocity :: Velocity }
-data World = World { iteration :: Int, player :: Player }
+worldPicture :: World -> Picture
+worldPicture w = color white . (uncurry translate . view (player . position)) w $ thickCircle 10 20
 
-draw :: World -> Picture
-draw w = color white . (uncurry translate . position . player) w $ thickCircle 10 20
+worldTransform :: Event -> World -> World
+worldTransform (EventKey (SpecialKey sk) ks _ _) w@(World _ p@(Player _ (vx, vy)))
+  | sk == KeyLeft && ks == Down = vel _1 (-1)
+  | sk == KeyLeft && ks == Up = vel _1 0
+  | sk == KeyRight && ks == Down = vel _1 1
+  | sk == KeyRight && ks == Up = vel _1 0
+  | sk == KeyUp && ks == Down = vel _2 1
+  | sk == KeyUp && ks == Up = vel _2 0
+  | sk == KeyDown && ks == Down = vel _2 (-1)
+  | sk == KeyDown && ks == Up = vel _2 0
+  where vel f c = w & player . velocity . f .~ c
+        nle 0 0 = (0, 0)
+        nle x y = normalizeV (x, y)
+worldTransform e w = w
 
-input :: Event -> World -> World
-input (EventKey (SpecialKey sk) ks _ _) w@(World _ p@(Player _ (vx, vy)))
-  | sk == KeyLeft && ks == Down = applyVel (-1) vy
-  | sk == KeyLeft && ks == Up = applyVel 0 vy
-  | sk == KeyRight && ks == Down = applyVel 1 vy
-  | sk == KeyRight && ks == Up = applyVel 0 vy
-  | sk == KeyUp && ks == Down = applyVel vx 1
-  | sk == KeyUp && ks == Up = applyVel vx 0
-  | sk == KeyDown && ks == Down = applyVel vx (-1)
-  | sk == KeyDown && ks == Up = applyVel vx 0
-  where
-    applyVel x y = w { player = p { velocity = normalized x y } }
-    normalized 0 0 = (0, 0)
-    normalized x y = normalizeV (x, y)
-input e w = w
-
-step :: Float -> World -> World
-step dt w@(World i (Player p v)) = World (i + 1) (Player (stepMove |+| p) v)
-  where
-    stepMove = mulSV 400 . mulSV dt $ v
+worldIterate :: Float -> World -> World
+worldIterate dt w = w &
+                    (iteration %~ (+ 1))
+                    . (player . position %~ (stepMove |+|))
+  where stepMove = mulSV 400
+                   . mulSV dt
+                   . view (player . velocity)
+                   $ w
 
 runGame :: IO ()
-runGame = play (InWindow "Game" (600, 600) (600, 100)) black 60 (World 0 (Player (0, 0) (0, 0))) draw input step
+runGame = play window black 60 initialWorld worldPicture worldTransform worldIterate

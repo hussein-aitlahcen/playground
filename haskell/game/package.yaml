@@ -1,26 +1,28 @@
 name:                game
 version:             0.1.0.0
-github:              "githubuser/game"
-license:             BSD3
-author:              "Author name here"
-maintainer:          "example@example.com"
-copyright:           "2017 Author name here"
+github:              "github.com/hussein-aitlahcen/playground"
+license:             GPL-3
+author:              "Hussein Ait Lahcen"
+maintainer:          "hussein.aitlahcen@gmail.com"
+copyright:           "2017 Hussein Ait Lahcen"
 
 extra-source-files:
 - README.md
 - ChangeLog.md
 
 # Metadata used when publishing your package
-synopsis:            Short description of your package
+synopsis:            Messing around
 # category:            Web
 
 # To avoid duplicated efforts in documentation and dealing with the
 # complications of embedding Haddock markup inside cabal files, it is
 # common to point users to the README.md file.
-description:         Please see the README on Github at <https://github.com/githubuser/game#readme>
+description:         Please see the README
 
 dependencies:
 - base >= 4.7 && < 5
+- gloss
+- lens
 
 library:
   source-dirs: src
