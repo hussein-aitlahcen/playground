@@ -46,9 +46,7 @@ worldTransform (EventKey (SpecialKey sk) ks _ _) w
   | sk == KeyUp && ks == Up = vel _2 0
   | sk == KeyDown && ks == Down = vel _2 (-1)
   | sk == KeyDown && ks == Up = vel _2 0
-  where vel f c = w & player . velocity . f .~ c
-        nle 0 0 = (0, 0)
-        nle x y = normalizeV (x, y)
+  where vel f c = w & (player . velocity %~ safeNormV) . (player . velocity . f .~ c)
 worldTransform e w = w
 
 worldIterate :: Float -> World -> World
