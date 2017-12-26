@@ -22,6 +22,7 @@ module Game where
 import           Common
 import           Control.Lens
 import           Control.Lens.Operators
+import           Data.Bifunctor
 import           Graphics.Gloss.Data.Color
 import           Graphics.Gloss.Data.Picture
 import           Graphics.Gloss.Data.Vector
@@ -38,15 +39,15 @@ worldPicture w = color white . (uncurry translate . view (player . position)) w 
 
 worldTransform :: Event -> World -> World
 worldTransform (EventKey (SpecialKey sk) ks _ _) w
-  | sk == KeyLeft && ks == Down = vel _1 (-1)
-  | sk == KeyLeft && ks == Up = vel _1 0
-  | sk == KeyRight && ks == Down = vel _1 1
-  | sk == KeyRight && ks == Up = vel _1 0
-  | sk == KeyUp && ks == Down = vel _2 1
-  | sk == KeyUp && ks == Up = vel _2 0
-  | sk == KeyDown && ks == Down = vel _2 (-1)
-  | sk == KeyDown && ks == Up = vel _2 0
-  where vel f c = w & (player . velocity %~ safeNormV) . (player . velocity . f .~ c)
+  | sk == KeyLeft && ks == Down = vel first (-1)
+  | sk == KeyLeft && ks == Up = vel first 0
+  | sk == KeyRight && ks == Down = vel first 1
+  | sk == KeyRight && ks == Up = vel first 0
+  | sk == KeyUp && ks == Down = vel second 1
+  | sk == KeyUp && ks == Up = vel second 0
+  | sk == KeyDown && ks == Down = vel second (-1)
+  | sk == KeyDown && ks == Up = vel second 0
+  where vel f v = w & player . velocity %~ safeNormV . f (const v)
 worldTransform e w = w
 
 worldIterate :: Float -> World -> World
