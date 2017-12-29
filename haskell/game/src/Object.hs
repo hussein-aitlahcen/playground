@@ -43,17 +43,17 @@ class HasVelocity s a | s -> a where
   velocity :: Lens' s a
 
 instance HasPosition Player Position where
-  position f (Player p v) = fmap (flip Player $ v) (f p)
+  position = lens _position $ \a b -> a { _position = b }
   {-# INLINE position #-}
 
 instance HasVelocity Player Velocity where
-  velocity f (Player p v) = fmap (Player p) (f v)
+  velocity = lens _velocity $ \a b -> a { _velocity = b }
   {-# INLINE velocity #-}
 
 instance HasIteration World Int where
-  iteration f (World i p) = fmap (flip World $ p) (f i)
+  iteration = lens _iteration $ \a b -> a { _iteration = b }
   {-# INLINE iteration #-}
 
 instance HasPlayer World Player where
-  player f (World i p) = fmap (World i) (f p)
+  player = lens _player $ \a b -> a { _player = b }
   {-# INLINE player #-}

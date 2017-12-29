@@ -17,6 +17,8 @@
 -- You should have received a copy of the GNU General Public License
 -- along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+{-# LANGUAGE FlexibleContexts #-}
+
 module Game where
 
 import           Common
@@ -29,15 +31,25 @@ import           Graphics.Gloss.Data.Vector
 import           Graphics.Gloss.Interface.Pure.Game
 import           Object
 
+window :: Display
 window = InWindow "Game" (600, 600) (600, 100)
 
+speed :: Float
+speed = 400
+
+initialPlayer :: Player
 initialPlayer = Player (0, 0) (0, 0)
+
+initialWorld :: World
 initialWorld = World 0 initialPlayer
 
 worldPicture :: World -> Picture
 worldPicture w = color white . (uncurry translate . view (player . position)) w $ thickCircle 10 20
 
-worldTransform :: Event -> World -> World
+transformObj :: (HasVelocity s Vector) => ((Float -> Float) -> Vector -> Vector) -> Float -> s -> s
+transformObj f v = velocity %~ safeNormV . f (const v)
+
+worldTransform :: (HasVelocity a Vector, HasPlayer p a) => Event -> p -> p
 worldTransform (EventKey (SpecialKey sk) ks _ _) w
   | sk == KeyLeft && ks == Down = vel first (-1)
   | sk == KeyLeft && ks == Up = vel first 0
@@ -47,17 +59,17 @@ worldTransform (EventKey (SpecialKey sk) ks _ _) w
   | sk == KeyUp && ks == Up = vel second 0
   | sk == KeyDown && ks == Down = vel second (-1)
   | sk == KeyDown && ks == Up = vel second 0
-  where vel f v = w & player . velocity %~ safeNormV . f (const v)
+  where vel f v = w & player %~ transformObj f v
 worldTransform e w = w
 
-worldIterate :: Float -> World -> World
-worldIterate dt w = w &
-                    (iteration %~ (+ 1))
-                    . (player . position %~ (stepMove |+|))
-  where stepMove = mulSV 400
-                   . mulSV dt
-                   . view (player . velocity)
-                   $ w
+translateV :: Float -> Float -> Vector -> Vector
+translateV dt s = mulSV (s * dt)
+
+translateObj :: (HasPosition a Point, HasVelocity a Velocity) => Float -> a -> a
+translateObj dt p = p & position %~ ((|+|) (translateV dt speed $ view velocity p))
+
+timestepObj :: (HasVelocity a2 Velocity, HasPosition a2 Point, HasPlayer b a2, Num a1, HasIteration b a1) => Float -> b -> b
+timestepObj dt w = w & (iteration %~ (+ 1)) . (player %~ translateObj dt)
 
 runGame :: IO ()
-runGame = play window black 60 initialWorld worldPicture worldTransform worldIterate
+runGame = play window black 60 initialWorld worldPicture worldTransform timestepObj
