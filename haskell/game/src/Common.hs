@@ -22,6 +22,8 @@ module Common where
 import           Graphics.Gloss.Data.Vector
 import           Graphics.Gloss.Interface.Pure.Game
 
+type Time = Float
+type Speed = Float
 type Velocity = Vector
 type Position = Point
 
