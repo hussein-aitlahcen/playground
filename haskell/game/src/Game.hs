@@ -17,7 +17,8 @@
 -- You should have received a copy of the GNU General Public License
 -- along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 
 module Game where
 
@@ -31,11 +32,14 @@ import           Graphics.Gloss.Data.Vector
 import           Graphics.Gloss.Interface.Pure.Game
 import           Object
 
+fps :: Int
+fps = 60
+
+speed :: Speed
+speed = 400
+
 window :: Display
 window = InWindow "Game" (600, 600) (600, 100)
-
-speed :: Float
-speed = 400
 
 initialPlayer :: Player
 initialPlayer = Player (0, 0) (0, 0)
@@ -46,30 +50,28 @@ initialWorld = World 0 initialPlayer
 worldPicture :: World -> Picture
 worldPicture w = color white . (uncurry translate . view (player . position)) w $ thickCircle 10 20
 
-transformObj :: (HasVelocity s Vector) => ((Float -> Float) -> Vector -> Vector) -> Float -> s -> s
-transformObj f v = velocity %~ safeNormV . f (const v)
-
 worldTransform :: (HasVelocity a Vector, HasPlayer p a) => Event -> p -> p
 worldTransform (EventKey (SpecialKey sk) ks _ _) w
-  | sk == KeyLeft && ks == Down = vel first (-1)
-  | sk == KeyLeft && ks == Up = vel first 0
-  | sk == KeyRight && ks == Down = vel first 1
-  | sk == KeyRight && ks == Up = vel first 0
-  | sk == KeyUp && ks == Down = vel second 1
-  | sk == KeyUp && ks == Up = vel second 0
-  | sk == KeyDown && ks == Down = vel second (-1)
-  | sk == KeyDown && ks == Up = vel second 0
-  where vel f v = w & player %~ transformObj f v
+  | sk == KeyLeft && ks == Down = updateVelocity first (-1)
+  | sk == KeyLeft && ks == Up = updateVelocity first 0
+  | sk == KeyRight && ks == Down = updateVelocity first 1
+  | sk == KeyRight && ks == Up = updateVelocity first 0
+  | sk == KeyUp && ks == Down = updateVelocity second 1
+  | sk == KeyUp && ks == Up = updateVelocity second 0
+  | sk == KeyDown && ks == Down = updateVelocity second (-1)
+  | sk == KeyDown && ks == Up = updateVelocity second 0
+  where
+    updateVelocity comp val = w & player . velocity %~ safeNormV . comp (const val)
 worldTransform e w = w
 
-translateV :: Float -> Float -> Vector -> Vector
+translateV :: Time -> Speed -> Vector -> Vector
 translateV dt s = mulSV (s * dt)
 
-translateObj :: (HasPosition a Point, HasVelocity a Velocity) => Float -> a -> a
+translateObj :: (HasPosition a Point, HasVelocity a Velocity) => Time -> a -> a
 translateObj dt p = p & position %~ ((|+|) (translateV dt speed $ view velocity p))
 
-timestepObj :: (HasVelocity a2 Velocity, HasPosition a2 Point, HasPlayer b a2, Num a1, HasIteration b a1) => Float -> b -> b
+timestepObj :: (HasVelocity a Velocity, HasPosition a Point, HasPlayer b a, HasIteration b Int) => Time -> b -> b
 timestepObj dt w = w & (iteration %~ (+ 1)) . (player %~ translateObj dt)
 
 runGame :: IO ()
-runGame = play window black 60 initialWorld worldPicture worldTransform timestepObj
+runGame = play window black fps initialWorld worldPicture worldTransform timestepObj
