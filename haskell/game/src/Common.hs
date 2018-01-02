@@ -31,4 +31,4 @@ type Position = Point
 (|+|) (ax, ay) (bx, by) = (ax + bx, ay + by)
 
 safeNormV v@(0, 0) = v
-safeNormV v = normalizeV v
+safeNormV v        = normalizeV v
