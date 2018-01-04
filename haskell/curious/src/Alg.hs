@@ -1,4 +1,4 @@
--- Algebra.hs ---
+-- Alg.hs ---
 
 -- Copyright (C) 2017 Hussein Ait-Lahcen
 
