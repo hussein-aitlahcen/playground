@@ -38,7 +38,7 @@ type Path = [Int]
 type MaxSumPath = (Int, Path)
 
 algebra :: BinTreeF Int MaxSumPath -> MaxSumPath
-algebra (LeafF _)            = (0, [])
+algebra (LeafF x)            = (x, [x])
 algebra (NodeF x left right) = bimap ((+) x) ((:) x) (f left right)
   where
     f a@(v, _) b@(w, _)
@@ -47,22 +47,16 @@ algebra (NodeF x left right) = bimap ((+) x) ((:) x) (f left right)
       | v == w = a
 
 tree :: BinTree Int
-tree = Node 8
-    (Node 3
-      (Node 2
-       (Node 10
-         (Leaf 0)
-         (Leaf 0))
-        (Leaf 0))
-      (Node 10
+tree = Node 1
+       (Node 1
         (Leaf 0)
-        (Leaf 0)))
-    (Node 1
-      (Node 10
-       (Node 20
-        (Leaf 0)
-        (Leaf 0))
-       (Leaf 0))
-      (Leaf 0))
+        (Leaf 3))
+       (Node 1
+        (Node 3
+         (Leaf 10)
+         (Leaf 6))
+        (Node 5
+         (Leaf 18)
+         (Leaf 6)))
 
 algTest = cata algebra tree
