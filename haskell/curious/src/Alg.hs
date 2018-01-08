@@ -17,46 +17,50 @@
 -- You should have received a copy of the GNU General Public License
 -- along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-{-# LANGUAGE DeriveTraversable #-}
-{-# LANGUAGE TemplateHaskell   #-}
-{-# LANGUAGE TypeFamilies      #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE GADTs         #-}
+{-# LANGUAGE TypeFamilies  #-}
+{-# LANGUAGE BangPatterns #-}
 
 module Alg where
 
 import           Data.Bifunctor
+import           Data.Functor.Base
 import           Data.Functor.Foldable
-import           Data.Functor.Foldable.TH
 import           Data.List
+import           Data.Vector           as V
+import           Text.Show.Deriving
 
--- Using F-algebra to resolve https://rosettacode.org/wiki/Maximum_triangle_path_sum
+{-
+    We want to transform the raw data into a binary tree, then compute the maximum triangle path sum
+    as explained here https://rosettacode.org/wiki/Maximum_triangle_path_sum.
 
-data BinTree a = Node a (BinTree a) (BinTree a) | Leaf a deriving Show
+    Using recursion scheme, we define an algebra and its coalgebra, composing them together
+    allow us to compute what we want.
+-}
 
-makeBaseFunctor ''BinTree
+data BinTreeF a b = NodeF a b b
+                  | LeafF
+                  deriving Functor
 
-type Path = [Int]
-type MaxSumPath = (Int, Path)
+deriveShow1 ''BinTreeF
+
+type Input      = Vector (Vector Int)
+type MaxSumPath = Int
+
+coalgebra :: (Int, Int, Input) -> BinTreeF Int (Int, Int, Input)
+coalgebra (i, j, v)
+  | V.length v == i = LeafF
+  | otherwise = NodeF (c ! j) (i', lj, v) (i', rj, v)
+  where
+    c = v ! i
+    i' = i + 1
+    lj = max (j - 1) 0
+    rj = j + 1
 
 algebra :: BinTreeF Int MaxSumPath -> MaxSumPath
-algebra (LeafF x)            = (x, [x])
-algebra (NodeF x left right) = bimap ((+) x) ((:) x) (f left right)
-  where
-    f a@(v, _) b@(w, _)
-      | v > w = a
-      | v < w = b
-      | v == w = a
+algebra LeafF         = 0
+algebra (NodeF x l r) = x + max l r
 
-tree :: BinTree Int
-tree = Node 1
-       (Node 1
-        (Leaf 0)
-        (Leaf 3))
-       (Node 1
-        (Node 3
-         (Leaf 10)
-         (Leaf 6))
-        (Node 5
-         (Leaf 18)
-         (Leaf 6)))
-
-algTest = cata algebra tree
+maxPathSum = hylo algebra coalgebra . ((,,) 0 0)

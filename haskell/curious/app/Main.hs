@@ -20,8 +20,12 @@
 
 module Main where
 
-import Lib
-import Game
+import           Alg
+import qualified Data.Vector as V
+import           Game
+import           Lib
 
 main :: IO ()
-main = play
+main = maxPathSum . V.fromList . (map (V.fromList . map readInt . words) . lines) <$> readFile "./files/triangle.txt" >>= print
+  where
+    readInt x = read x :: Int
