@@ -40,7 +40,7 @@ import           Text.Show.Deriving
     allow us to compute what we want.
 -}
 
-data BinTreeF a b = NodeF a b b
+data BinTreeF a b = NodeF !a !b !b
                   | LeafF
                   deriving Functor
 
